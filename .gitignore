@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+.metadata_never_index
+
+# Build artifacts
+FluentyCoach.app/
+build/
+*.xcuserstate
+
+# Xcode
+xcuserdata/
+*.xcuserdatad/
+
+# Generated icon outputs (regenerated from AppIcon.svg by build.sh)
+FluentyCoach/Resources/AppIcon.icns
+FluentyCoach/Resources/MenuBarIcon.pdf

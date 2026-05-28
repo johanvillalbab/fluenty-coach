@@ -1,0 +1,35 @@
+name: FluentyCoach
+options:
+  bundleIdPrefix: com.fluenty
+  deploymentTarget:
+    macOS: "15.0"
+  defaultConfig: Debug
+  xcodeVersion: "16"
+
+settings:
+  base:
+    PRODUCT_NAME: FluentyCoach
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  FluentyCoach:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: FluentyCoach
+    settings:
+      base:
+        INFOPLIST_FILE: FluentyCoach/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.fluenty.coach
+        CODE_SIGN_ENTITLEMENTS: FluentyCoach/FluentyCoach.entitlements
+        ENABLE_APP_SANDBOX: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: FluentyCoach/FluentyCoach.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.network.client: true

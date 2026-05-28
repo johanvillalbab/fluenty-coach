@@ -1,0 +1,392 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		04021AB6C69130BBAB69C5E9 /* TranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FB0FEDEDDD67BC8EC6DFC4 /* TranslationService.swift */; };
+		0A4BED0E072EEA0557701AB9 /* ApiKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 906500A3C9DCFAB00BBD9197 /* ApiKeySetupView.swift */; };
+		0D88B45E6D0C0324E0B3EE96 /* PopoverController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6176FC44B1B5B8F4FA7E52E /* PopoverController.swift */; };
+		1D2771E7B90CBFE8417FC56E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B8E547FD3468A4746B1633 /* AppDelegate.swift */; };
+		206674301F694B39FF273BDB /* TranslationDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97DBC748B0ECA2C383B528DD /* TranslationDirection.swift */; };
+		65514C5825D92F6CD9F4B9D0 /* TranslationResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A99741AF3916CFFE63923B3 /* TranslationResultView.swift */; };
+		67D001C9BBAA014A891E7F7E /* FluentyCoachApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CD689B0026895AB702EC8B /* FluentyCoachApp.swift */; };
+		6ACF1FDE39479B84B16FE9F1 /* TranslationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 256EE78ADF1A9450FFB38F76 /* TranslationState.swift */; };
+		8B88F81B273AA3BECA04A6FE /* AccessibilityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EFABBAFE4886D8B8250BFD9 /* AccessibilityService.swift */; };
+		8D2F2E6F6F3ADAFF50BEC17A /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920CE5A755B790889907F449 /* HotkeyService.swift */; };
+		961E914D61BB2C026E7C38CC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A26F88ACE1A80633FD8525A /* SettingsView.swift */; };
+		AC90818012DD224B35B964D8 /* TranslationPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1258FFA82D1745E99FCED38D /* TranslationPopoverView.swift */; };
+		D3155E170B5F6C9B07C34314 /* GlassActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7BC5FAF6F154DD841C3A26 /* GlassActionButton.swift */; };
+		D686861755E5C054E8B4A144 /* NSScreen+Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2F5EDBC141292BA40C81D5 /* NSScreen+Cursor.swift */; };
+		FCA977328EFF726CC7AD34F2 /* LanguageToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8377DD8B37204D520CAA27BF /* LanguageToggleView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1258FFA82D1745E99FCED38D /* TranslationPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationPopoverView.swift; sourceTree = "<group>"; };
+		256EE78ADF1A9450FFB38F76 /* TranslationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationState.swift; sourceTree = "<group>"; };
+		31FB0FEDEDDD67BC8EC6DFC4 /* TranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationService.swift; sourceTree = "<group>"; };
+		473EA2364CA2DCAB11BD5D6F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4E7BC5FAF6F154DD841C3A26 /* GlassActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassActionButton.swift; sourceTree = "<group>"; };
+		4EFABBAFE4886D8B8250BFD9 /* AccessibilityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityService.swift; sourceTree = "<group>"; };
+		50B8E547FD3468A4746B1633 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		61354B3B32E65CB8DB0B5861 /* FluentyCoach.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FluentyCoach.entitlements; sourceTree = "<group>"; };
+		6A26F88ACE1A80633FD8525A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8377DD8B37204D520CAA27BF /* LanguageToggleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageToggleView.swift; sourceTree = "<group>"; };
+		906500A3C9DCFAB00BBD9197 /* ApiKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiKeySetupView.swift; sourceTree = "<group>"; };
+		920CE5A755B790889907F449 /* HotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyService.swift; sourceTree = "<group>"; };
+		93CD689B0026895AB702EC8B /* FluentyCoachApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluentyCoachApp.swift; sourceTree = "<group>"; };
+		97DBC748B0ECA2C383B528DD /* TranslationDirection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationDirection.swift; sourceTree = "<group>"; };
+		9A99741AF3916CFFE63923B3 /* TranslationResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationResultView.swift; sourceTree = "<group>"; };
+		A6176FC44B1B5B8F4FA7E52E /* PopoverController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverController.swift; sourceTree = "<group>"; };
+		B03060F8F06DAAFCFAABC65E /* FluentyCoach.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FluentyCoach.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE2F5EDBC141292BA40C81D5 /* NSScreen+Cursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSScreen+Cursor.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		20556EC6F4272B3FF9E1ACCA = {
+			isa = PBXGroup;
+			children = (
+				99D888FBCD8CB51733A70B4A /* FluentyCoach */,
+				7B7E24FC38CA8B18F47EE507 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4717E18F4EC3E251F8C211C1 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				FE2F5EDBC141292BA40C81D5 /* NSScreen+Cursor.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7483E0B603014E13BB2535ED /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				906500A3C9DCFAB00BBD9197 /* ApiKeySetupView.swift */,
+				4E7BC5FAF6F154DD841C3A26 /* GlassActionButton.swift */,
+				8377DD8B37204D520CAA27BF /* LanguageToggleView.swift */,
+				A6176FC44B1B5B8F4FA7E52E /* PopoverController.swift */,
+				6A26F88ACE1A80633FD8525A /* SettingsView.swift */,
+				1258FFA82D1745E99FCED38D /* TranslationPopoverView.swift */,
+				9A99741AF3916CFFE63923B3 /* TranslationResultView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		7B7E24FC38CA8B18F47EE507 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B03060F8F06DAAFCFAABC65E /* FluentyCoach.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		99D888FBCD8CB51733A70B4A /* FluentyCoach */ = {
+			isa = PBXGroup;
+			children = (
+				61354B3B32E65CB8DB0B5861 /* FluentyCoach.entitlements */,
+				473EA2364CA2DCAB11BD5D6F /* Info.plist */,
+				ED2B2A36EB530C9B5EC3A099 /* App */,
+				4717E18F4EC3E251F8C211C1 /* Extensions */,
+				CD8CF023A5973CD0C11D9E2A /* Models */,
+				B2E378F6F577B4A1839CE1E0 /* Services */,
+				7483E0B603014E13BB2535ED /* UI */,
+			);
+			path = FluentyCoach;
+			sourceTree = "<group>";
+		};
+		B2E378F6F577B4A1839CE1E0 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4EFABBAFE4886D8B8250BFD9 /* AccessibilityService.swift */,
+				920CE5A755B790889907F449 /* HotkeyService.swift */,
+				31FB0FEDEDDD67BC8EC6DFC4 /* TranslationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		CD8CF023A5973CD0C11D9E2A /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				97DBC748B0ECA2C383B528DD /* TranslationDirection.swift */,
+				256EE78ADF1A9450FFB38F76 /* TranslationState.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		ED2B2A36EB530C9B5EC3A099 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				50B8E547FD3468A4746B1633 /* AppDelegate.swift */,
+				93CD689B0026895AB702EC8B /* FluentyCoachApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		15D497A1DAC3CC2EBEE2A04C /* FluentyCoach */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 85C26C51F071E29FCBFD6746 /* Build configuration list for PBXNativeTarget "FluentyCoach" */;
+			buildPhases = (
+				170C38AD5385FA30CAE2F11F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FluentyCoach;
+			packageProductDependencies = (
+			);
+			productName = FluentyCoach;
+			productReference = B03060F8F06DAAFCFAABC65E /* FluentyCoach.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CFF72A0A5801EF7525D99417 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					15D497A1DAC3CC2EBEE2A04C = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 21A7094619442B442417C1CC /* Build configuration list for PBXProject "FluentyCoach" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 20556EC6F4272B3FF9E1ACCA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7B7E24FC38CA8B18F47EE507 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				15D497A1DAC3CC2EBEE2A04C /* FluentyCoach */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		170C38AD5385FA30CAE2F11F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B88F81B273AA3BECA04A6FE /* AccessibilityService.swift in Sources */,
+				0A4BED0E072EEA0557701AB9 /* ApiKeySetupView.swift in Sources */,
+				1D2771E7B90CBFE8417FC56E /* AppDelegate.swift in Sources */,
+				67D001C9BBAA014A891E7F7E /* FluentyCoachApp.swift in Sources */,
+				D3155E170B5F6C9B07C34314 /* GlassActionButton.swift in Sources */,
+				8D2F2E6F6F3ADAFF50BEC17A /* HotkeyService.swift in Sources */,
+				FCA977328EFF726CC7AD34F2 /* LanguageToggleView.swift in Sources */,
+				D686861755E5C054E8B4A144 /* NSScreen+Cursor.swift in Sources */,
+				0D88B45E6D0C0324E0B3EE96 /* PopoverController.swift in Sources */,
+				961E914D61BB2C026E7C38CC /* SettingsView.swift in Sources */,
+				206674301F694B39FF273BDB /* TranslationDirection.swift in Sources */,
+				AC90818012DD224B35B964D8 /* TranslationPopoverView.swift in Sources */,
+				65514C5825D92F6CD9F4B9D0 /* TranslationResultView.swift in Sources */,
+				04021AB6C69130BBAB69C5E9 /* TranslationService.swift in Sources */,
+				6ACF1FDE39479B84B16FE9F1 /* TranslationState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		6D1C1258817056BE51E834D1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = FluentyCoach/FluentyCoach.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = FluentyCoach/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fluenty.coach;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		759FA7F2A930D4C2C61BC8C1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = FluentyCoach/FluentyCoach.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				INFOPLIST_FILE = FluentyCoach/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fluenty.coach;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E7D4D1E69ACC9B8D5374A536 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = FluentyCoach;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		F12440FD15DCE59DA5F62494 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = FluentyCoach;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21A7094619442B442417C1CC /* Build configuration list for PBXProject "FluentyCoach" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F12440FD15DCE59DA5F62494 /* Debug */,
+				E7D4D1E69ACC9B8D5374A536 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		85C26C51F071E29FCBFD6746 /* Build configuration list for PBXNativeTarget "FluentyCoach" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D1C1258817056BE51E834D1 /* Debug */,
+				759FA7F2A930D4C2C61BC8C1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CFF72A0A5801EF7525D99417 /* Project object */;
+}
