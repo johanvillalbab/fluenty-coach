@@ -24,8 +24,6 @@
 	<true/>
 	<key>NSAccessibilityUsageDescription</key>
 	<string>Fluenty Coach needs accessibility access to replace selected text in other apps.</string>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>Fluenty Coach needs Automation access to paste translated text into the source app.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

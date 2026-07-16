@@ -12,15 +12,7 @@ struct GlassActionButton: View {
                 .font(.system(size: 12, weight: .medium))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(
-                            Color.white.opacity(0.2),
-                            lineWidth: 0.5
-                        )
-                )
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)

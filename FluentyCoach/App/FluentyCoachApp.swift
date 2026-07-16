@@ -33,6 +33,11 @@ private struct MenuBarContent: View {
     let appDelegate: AppDelegate
 
     var body: some View {
+        Button("History…") {
+            appDelegate.openHistoryWindow()
+        }
+        .keyboardShortcut("h", modifiers: .command)
+
         Button("Settings…") {
             appDelegate.openSettingsWindow()
         }

@@ -5,6 +5,7 @@ struct TranslationPopoverView: View {
     @Bindable var state: TranslationState
     let translation: TranslationService
     let accessibility: AccessibilityService
+    let speech: SpeechService
     let onDismiss: () -> Void
 
     var hasTranslation: Bool { state.translatedText != nil && !state.isLoading }
@@ -14,11 +15,25 @@ struct TranslationPopoverView: View {
         VStack(spacing: 0) {
             // ── Header ──────────────────────────────────────
             HStack(spacing: 8) {
-                Image(systemName: "translate")
+                Image(systemName: "character.bubble")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                LanguageToggleView(direction: languageDirectionBinding)
+                // Retranslate on explicit user actions only — the service also
+                // updates targetLanguage during auto-swap, and reacting to that
+                // change would fire a redundant request.
+                LanguagePickerBar(
+                    source: state.displayedSource,
+                    target: state.targetLanguage,
+                    onSwap: {
+                        state.swapLanguages()
+                        retranslate()
+                    },
+                    onSelectTarget: {
+                        state.selectHomeTarget($0)
+                        retranslate()
+                    }
+                )
 
                 Spacer()
 
@@ -39,13 +54,23 @@ struct TranslationPopoverView: View {
             // ── Translation result ───────────────────────────
             TranslationResultView(state: state)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 70, maxHeight: 110)
+                .frame(height: 104)
 
             Divider()
                 .opacity(0.25)
 
             // ── Action buttons ───────────────────────────────
             HStack(spacing: 6) {
+                // Listen / pronounce the translation in the target language.
+                GlassActionButton(
+                    title: speech.isSpeaking ? "Stop" : "Listen",
+                    systemImage: speech.isSpeaking ? "stop.fill" : "speaker.wave.2.fill",
+                    isDisabled: !hasTranslation
+                ) {
+                    guard let text = state.translatedText else { return }
+                    speech.speak(text, language: state.targetLanguage)
+                }
+
                 Spacer()
 
                 GlassActionButton(
@@ -54,9 +79,11 @@ struct TranslationPopoverView: View {
                     isDisabled: !canReplace
                 ) {
                     guard let text = state.translatedText else { return }
-                    accessibility.replaceSelection(
-                        in: state.sourceAppPID,
-                        with: text
+                    accessibility.replaceTranslation(
+                        in: state.sourceElement,
+                        pid: state.sourceAppPID,
+                        with: text,
+                        selectedRange: state.sourceSelectionRange
                     ) { onDismiss() }
                 }
 
@@ -75,46 +102,23 @@ struct TranslationPopoverView: View {
             .padding(.vertical, 9)
         }
         .frame(width: 320)
-        .background(.ultraThinMaterial)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.07), Color.clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [.white.opacity(0.32), .white.opacity(0.06)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.75
-                )
-        )
-        .shadow(color: .black.opacity(0.28), radius: 28, y: 12)
+        // Liquid Glass surface (same treatment as TimerStack): the glass provides
+        // the rounded edge and depth — no manual material/stroke/shadow, which is
+        // what previously bled a hard-cornered rectangle around the panel.
+        .glassEffect(.regular, in: .rect(cornerRadius: 24, style: .continuous))
+        .focusEffectDisabled()
     }
 
-    private var languageDirectionBinding: Binding<TranslationDirection> {
-        Binding(
-            get: { state.direction },
-            set: { newDirection in
-                guard newDirection != state.direction else { return }
-                state.direction = newDirection
-                retranslate(using: newDirection)
-            }
-        )
-    }
-
-    private func retranslate(using direction: TranslationDirection) {
+    private func retranslate() {
         let textToRetranslate = state.originalText
         guard !textToRetranslate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         Task { @MainActor in
-            await translation.translate(textToRetranslate, direction: direction)
+            await translation.translate(
+                textToRetranslate,
+                source: state.sourceLanguage,
+                target: state.targetLanguage
+            )
         }
     }
 }

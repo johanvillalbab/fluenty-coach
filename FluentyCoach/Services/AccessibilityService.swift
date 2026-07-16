@@ -9,12 +9,27 @@ final class AccessibilityService {
         AXIsProcessTrusted()
     }
 
-    /// Prompts the user to grant Accessibility permission if not already granted.
-    /// Should be called once at launch.
-    func requestAccessibilityPermissionIfNeeded() {
+    /// Triggers the system Accessibility permission prompt exactly once, ever.
+    /// The OS prompt also registers the app in the Accessibility list, which is
+    /// required before the user can toggle it on. After the first time we rely on
+    /// our own in-app onboarding (see `openAccessibilitySettings`) so the jarring
+    /// system modal never reappears on every launch.
+    func requestSystemPromptOnce() {
         guard !AXIsProcessTrusted() else { return }
+        let key = "didShowSystemAXPrompt"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
+    }
+
+    /// Opens System Settings directly on the Accessibility privacy pane so the
+    /// user can grant access without hunting through menus.
+    func openAccessibilitySettings() {
+        let urlString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     /// Capture the focused AXUIElement from the frontmost app.
@@ -37,6 +52,44 @@ final class AccessibilityService {
     func captureSelectedRange(in element: AXUIElement) -> NSRange? {
         guard let range = selectedTextRange(in: element) else { return nil }
         return NSRange(location: range.location, length: range.length)
+    }
+
+    /// A window of the focused element's text surrounding the current selection,
+    /// sent to DeepL as the unbilled `context` parameter so short fragments are
+    /// translated with their surroundings in mind. Returns nil when the element
+    /// exposes no text or the surroundings add nothing beyond the selection.
+    func contextSnippet(
+        around selectedText: String,
+        in element: AXUIElement,
+        selectedRange: NSRange?,
+        radius: Int = 600
+    ) -> String? {
+        guard let fullText = stringAttribute(kAXValueAttribute, in: element) else { return nil }
+        let nsText = fullText as NSString
+
+        // Prefer the captured selection range; fall back to locating the copied
+        // text (some controls report no usable kAXSelectedTextRange).
+        var range = selectedRange ?? NSRange(location: NSNotFound, length: 0)
+        if range.location == NSNotFound || range.length == 0 || NSMaxRange(range) > nsText.length {
+            range = nsText.range(of: selectedText)
+        }
+        guard range.location != NSNotFound, NSMaxRange(range) <= nsText.length else { return nil }
+
+        let start = max(0, range.location - radius)
+        let end = min(nsText.length, NSMaxRange(range) + radius)
+        guard end > start else { return nil }
+
+        // Expand to composed-character boundaries so the window never splits an
+        // emoji or other surrogate pair.
+        let window = nsText.rangeOfComposedCharacterSequences(
+            for: NSRange(location: start, length: end - start)
+        )
+        let snippet = nsText.substring(with: window)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Context only helps when it adds material beyond the copied text itself.
+        guard snippet.count > selectedText.count + 20 else { return nil }
+        return snippet
     }
 
     /// Replace the selected text in the given element with newText.
@@ -69,6 +122,25 @@ final class AccessibilityService {
         )
     }
 
+    /// Single entry point used by the Replace button. Prefers the precise,
+    /// Accessibility-based replacement (which restores the exact focus + selection
+    /// captured at copy time and has a clipboard-paste fallback baked in). Falls
+    /// back to a plain PID-targeted paste only when no AX element was captured
+    /// (e.g. Accessibility permission not yet granted).
+    func replaceTranslation(
+        in element: AXUIElement?,
+        pid: pid_t?,
+        with newText: String,
+        selectedRange: NSRange?,
+        completion: @escaping @MainActor () -> Void
+    ) {
+        if let element {
+            replaceSelectedText(in: element, with: newText, selectedRange: selectedRange, completion: completion)
+        } else {
+            replaceSelection(in: pid, with: newText, completion: completion)
+        }
+    }
+
     func pasteText(_ text: String, in element: AXUIElement, selectedRange: NSRange?, completion: @escaping @MainActor () -> Void) {
         pasteViaClipboard(
             with: text,
@@ -89,7 +161,7 @@ final class AccessibilityService {
             completion()
             return
         }
-        app.activate(options: .activateIgnoringOtherApps)
+        app.activate()
 
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(250))
@@ -99,28 +171,6 @@ final class AccessibilityService {
             self.simulatePaste()
 
             try? await Task.sleep(for: .milliseconds(250))
-            completion()
-        }
-    }
-
-    func pasteText(_ text: String, inApplicationWithPID pid: pid_t, completion: @escaping @MainActor () -> Void) {
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        pb.setString(text, forType: .string)
-
-        guard let app = NSRunningApplication(processIdentifier: pid) else {
-            completion()
-            return
-        }
-        app.activate(options: .activateIgnoringOtherApps)
-
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
-            if !self.pasteViaSystemEvents() {
-                self.simulatePaste()
-            }
-
-            try? await Task.sleep(for: .milliseconds(200))
             completion()
         }
     }
@@ -214,7 +264,7 @@ final class AccessibilityService {
             completion()
             return
         }
-        app.activate(options: .activateIgnoringOtherApps)
+        app.activate()
 
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(250))
@@ -268,19 +318,6 @@ final class AccessibilityService {
             kAXSelectedTextRangeAttribute as CFString,
             rangeValue
         )
-    }
-
-    private func pasteViaSystemEvents() -> Bool {
-        let source = """
-        tell application "System Events"
-            keystroke "v" using command down
-        end tell
-        """
-        guard let script = NSAppleScript(source: source) else { return false }
-
-        var error: NSDictionary?
-        _ = script.executeAndReturnError(&error)
-        return error == nil
     }
 
     /// Replace the active selection in the source app with translated text.

@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 # FluentyCoach build script
 # Usage:
-#   ./build.sh          — compile + sign FluentyCoach.app
-#   ./build.sh install  — also copy to /Applications/FluentyCoach.app
-#   ./build.sh cert     — create self-signed dev certificate (run once)
+#   ./build.sh              — compile + sign FluentyCoach.app
+#   ./build.sh install      — also copy to /Applications/FluentyCoach.app
+#   ./build.sh cert         — create self-signed dev certificate (run once)
+#   ./build.sh reset-perms  — clear stale Accessibility grant so it can be re-granted cleanly
 set -euo pipefail
+
+BUNDLE_ID="com.fluenty.coach"
+
+# ── reset-perms: clear stale TCC entries ────────────────────────────────────────
+# Old ad-hoc-signed builds can leave a dead Accessibility entry that the running
+# (cert-signed) app no longer matches, which makes macOS re-prompt on every launch.
+# Resetting lets you grant it once cleanly; the stable cert keeps it after that.
+if [[ "${1:-}" == "reset-perms" ]]; then
+    echo "==> Resetting Accessibility permission for $BUNDLE_ID"
+    tccutil reset Accessibility "$BUNDLE_ID" || true
+    tccutil reset AppleEvents "$BUNDLE_ID" || true
+    echo "==> Done. Launch the app and grant Accessibility once when asked."
+    exit 0
+fi
 
 CERT_NAME="FluentyDevCert"
 SIGN_IDENTITY="${FLUENTY_SIGN_IDENTITY:-$CERT_NAME}"
@@ -13,11 +28,16 @@ BIN_PATH="$APP_PATH/Contents/MacOS/FluentyCoach"
 ENTITLEMENTS="FluentyCoach/FluentyCoach.entitlements"
 
 SOURCES=(
-    FluentyCoach/Models/TranslationDirection.swift
+    FluentyCoach/Models/Language.swift
+    FluentyCoach/Models/PermissionState.swift
     FluentyCoach/Models/TranslationState.swift
     FluentyCoach/Extensions/NSScreen+Cursor.swift
     FluentyCoach/Services/AccessibilityService.swift
     FluentyCoach/Services/HotkeyService.swift
+    FluentyCoach/Services/SpeechService.swift
+    FluentyCoach/Services/HistoryStore.swift
+    FluentyCoach/Services/TranslationStyleStore.swift
+    FluentyCoach/Services/AITranslationService.swift
     FluentyCoach/Services/TranslationService.swift
     FluentyCoach/UI/GlassActionButton.swift
     FluentyCoach/UI/LanguageToggleView.swift
@@ -25,6 +45,8 @@ SOURCES=(
     FluentyCoach/UI/SettingsView.swift
     FluentyCoach/UI/TranslationResultView.swift
     FluentyCoach/UI/TranslationPopoverView.swift
+    FluentyCoach/UI/HistoryView.swift
+    FluentyCoach/UI/OnboardingView.swift
     FluentyCoach/UI/PopoverController.swift
     FluentyCoach/App/AppDelegate.swift
     FluentyCoach/App/FluentyCoachApp.swift
@@ -95,12 +117,51 @@ echo "==> Compiling FluentyCoach"
 swiftc "${SOURCES[@]}" \
     -o "$BIN_PATH" \
     -parse-as-library \
-    -target arm64-apple-macosx15.0
+    -target arm64-apple-macosx26.0
 
 # ── resources ───────────────────────────────────────────────────────────────────
 echo "==> Copying resources"
 cp -f FluentyCoach/Resources/AppIcon.icns "$APP_PATH/Contents/Resources/"
 cp -f FluentyCoach/Resources/MenuBarIcon.pdf "$APP_PATH/Contents/Resources/"
+
+# ── Info.plist: generated here so the bundle is reproducible ─────────────────────
+# (Intentionally NO NSAppleEventsUsageDescription — Fluenty uses only Accessibility,
+#  so macOS never shows a separate Automation permission modal.)
+echo "==> Writing Info.plist"
+cat > "$APP_PATH/Contents/Info.plist" << 'PLISTEOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>FluentyCoach</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.fluenty.coach</string>
+    <key>CFBundleName</key>
+    <string>FluentyCoach</string>
+    <key>CFBundleDisplayName</key>
+    <string>Fluenty Coach</string>
+    <key>CFBundleVersion</key>
+    <string>1.1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.1</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>26.0</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Fluenty Coach needs accessibility access to replace selected text in other apps.</string>
+</dict>
+</plist>
+PLISTEOF
 
 # ── sign ────────────────────────────────────────────────────────────────────────
 echo "==> Signing with '$SIGN_IDENTITY'"

@@ -8,14 +8,16 @@ final class PopoverController {
     private let state: TranslationState
     private let translation: TranslationService
     private let accessibility: AccessibilityService
+    private let speech: SpeechService
 
     private let panelWidth: CGFloat = 320
-    private let panelHeight: CGFloat = 220
+    private var panelHeight: CGFloat = 240
 
-    init(state: TranslationState, translation: TranslationService, accessibility: AccessibilityService) {
+    init(state: TranslationState, translation: TranslationService, accessibility: AccessibilityService, speech: SpeechService) {
         self.state = state
         self.translation = translation
         self.accessibility = accessibility
+        self.speech = speech
 
         NotificationCenter.default.addObserver(
             self,
@@ -49,6 +51,7 @@ final class PopoverController {
             state: state,
             translation: translation,
             accessibility: accessibility,
+            speech: speech,
             onDismiss: { [weak self] in self?.hide() }
         )
         buildPanelWith(rootView: AnyView(rootView))
@@ -69,11 +72,19 @@ final class PopoverController {
     }
 
     private func buildPanelWith(rootView: AnyView) {
+        // Size the panel to the content (TimerStack pattern). With no AppKit shadow
+        // and Liquid Glass providing the rounded edge, a content-sized panel leaves
+        // no hard-cornered ghost rectangle around the glass.
         let hv = NSHostingView(rootView: rootView)
-        hv.frame = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
+        hv.layoutSubtreeIfNeeded()
+        let fitting = hv.fittingSize
+        let height = fitting.height > 1 ? fitting.height : panelHeight
+        let size = NSSize(width: panelWidth, height: height)
+        panelHeight = height
+        hv.frame = NSRect(origin: .zero, size: size)
 
         let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true
@@ -83,7 +94,7 @@ final class PopoverController {
         p.level = .floating
         p.backgroundColor = .clear
         p.isOpaque = false
-        p.hasShadow = false
+        p.hasShadow = false                  // glass supplies depth; AppKit shadow bled a square frame
         p.animationBehavior = .none          // prevents Tahoe transform-animation crash
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         p.hidesOnDeactivate = false

@@ -66,26 +66,7 @@ struct ApiKeySetupView: View {
             .padding(.vertical, 10)
         }
         .frame(width: 320)
-        .background(.ultraThinMaterial)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.06), Color.clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [.white.opacity(0.3), .white.opacity(0.05)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.75
-                )
-        )
-        .shadow(color: .black.opacity(0.3), radius: 24, y: 10)
+        .glassEffect(.regular, in: .rect(cornerRadius: 24, style: .continuous))
+        .focusEffectDisabled()
     }
 }
