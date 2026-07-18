@@ -32,6 +32,11 @@ final class HotkeyService {
 
     // MARK: - Private
 
+    /// Standard marker clipboard managers (and Best Prompt) attach to programmatic
+    /// pasteboard writes. Their copy/restore dance produces rapid changeCount jumps
+    /// that would otherwise read as a user double-⌘C.
+    private static let transientMarker = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
+
     private func pollPasteboard() {
         let pasteboard = NSPasteboard.general
         let currentChangeCount = pasteboard.changeCount
@@ -39,6 +44,15 @@ final class HotkeyService {
 
         let changeDelta = currentChangeCount - lastChangeCount
         lastChangeCount = currentChangeCount
+
+        // Programmatic write (Best Prompt restoring the clipboard, a clipboard
+        // manager syncing…): not a user copy. Ignore it and reset the double-copy
+        // state so the automation can never complete a phantom double.
+        if pasteboard.types?.contains(Self.transientMarker) == true {
+            lastCopyTimestamp = 0
+            lastClipboardText = ""
+            return
+        }
 
         let text = pasteboard.string(forType: .string) ?? ""
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
