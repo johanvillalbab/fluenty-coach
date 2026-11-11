@@ -34,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             history: historyStore,
             ai: aiTranslationService
         )
+        aiTranslationService.applySettings()
         popoverController = PopoverController(
             state: translationState,
             translation: translationService,
@@ -54,6 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             accessibilityService.requestSystemPromptOnce()
             showOnboardingWindow()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        aiTranslationService.shutdown()
     }
 
     // MARK: - Permission monitoring
@@ -139,7 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showWindow(
             &settingsWindow,
             title: "Fluenty Coach — Settings",
-            size: NSSize(width: 480, height: 640),
+            size: NSSize(width: 480, height: 720),
             rootView: SettingsView(
                 permission: permissionState,
                 accessibility: accessibilityService,

@@ -37,6 +37,7 @@ SOURCES=(
     FluentyCoach/Services/SpeechService.swift
     FluentyCoach/Services/HistoryStore.swift
     FluentyCoach/Services/TranslationStyleStore.swift
+    FluentyCoach/Services/CursorACPClient.swift
     FluentyCoach/Services/AITranslationService.swift
     FluentyCoach/Services/TranslationService.swift
     FluentyCoach/UI/GlassActionButton.swift
@@ -142,9 +143,9 @@ cat > "$APP_PATH/Contents/Info.plist" << 'PLISTEOF'
     <key>CFBundleDisplayName</key>
     <string>Fluenty Coach</string>
     <key>CFBundleVersion</key>
-    <string>1.1</string>
+    <string>1.2</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1</string>
+    <string>1.2</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>

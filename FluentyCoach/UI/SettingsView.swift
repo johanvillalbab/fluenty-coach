@@ -9,7 +9,9 @@ struct SettingsView: View {
 
     @State private var engine = TranslationEngine.current
     @State private var apiKey: String = UserDefaults.standard.string(forKey: "deeplApiKey") ?? ""
+    @State private var cursorApiKey: String = UserDefaults.standard.string(forKey: AITranslationService.apiKeyKey) ?? ""
     @State private var saved = false
+    @State private var cursorKeySaved = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     @State private var models: [CursorModel] = []
@@ -31,9 +33,11 @@ struct SettingsView: View {
                 .labelsHidden()
                 .onChange(of: engine) { _, newValue in
                     TranslationEngine.current = newValue
+                    ai.applySettings()
+                    if newValue == .ai && models.isEmpty { loadModels() }
                 }
                 Text(engine == .ai
-                     ? "Translations run through your Cursor account via cursor-agent in headless mode — no API key needed."
+                     ? "Translations run through cursor-agent in headless mode, using your Cursor API key or login."
                      : "Translations use the DeepL REST API with your API key.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -74,14 +78,14 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 480, height: 640)
+        .frame(width: 480, height: 720)
         .onAppear {
             permission.refresh()
             selectedModel = ai.model
             cliPath = ai.cliPath
             cliAvailable = ai.isCLIAvailable
             styleText = style.text
-            loadModels()
+            if engine == .ai { loadModels() }
         }
     }
 
@@ -100,6 +104,27 @@ struct SettingsView: View {
                 Button("Save") { saveCLIPath() }
             }
 
+            VStack(alignment: .leading, spacing: 6) {
+                SecureField("Cursor API key (crsr_…)", text: $cursorApiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 12, design: .monospaced))
+                    .onSubmit { saveCursorAPIKey() }
+                HStack {
+                    Text("Used as CURSOR_API_KEY when launching cursor-agent. Leave empty to reuse your Cursor login.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if cursorKeySaved {
+                        Label("Saved!", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.system(size: 12))
+                            .transition(.opacity)
+                    }
+                    Button("Save") { saveCursorAPIKey() }
+                        .disabled(cursorApiKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+
             HStack(spacing: 8) {
                 Picker("Model", selection: $selectedModel) {
                     if models.isEmpty {
@@ -112,6 +137,7 @@ struct SettingsView: View {
                 }
                 .onChange(of: selectedModel) { _, newValue in
                     UserDefaults.standard.set(newValue, forKey: AITranslationService.modelKey)
+                    ai.applySettings()
                 }
                 if isLoadingModels {
                     ProgressView().controlSize(.small)
@@ -121,7 +147,7 @@ struct SettingsView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
-                    .help("Reload models from cursor-agent --list-models")
+                    .help("Reload models from cursor-agent")
                 }
             }
             Text("composer-2.5 is the fastest — ideal for the popover. Thinking models translate slightly better but take longer.")
@@ -201,6 +227,20 @@ struct SettingsView: View {
 
     // MARK: - Actions
 
+    private func saveCursorAPIKey() {
+        let trimmed = cursorApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            UserDefaults.standard.removeObject(forKey: AITranslationService.apiKeyKey)
+        } else {
+            UserDefaults.standard.set(trimmed, forKey: AITranslationService.apiKeyKey)
+        }
+        withAnimation { cursorKeySaved = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { cursorKeySaved = false }
+        }
+        loadModels()
+    }
+
     private func saveCLIPath() {
         let trimmed = cliPath.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty || trimmed == AITranslationService.defaultCLIPath {
@@ -224,7 +264,9 @@ struct SettingsView: View {
             let found = await ai.listModels()
             if !found.isEmpty {
                 models = found
-                if !found.contains(where: { $0.id == selectedModel }) {
+                if let match = CursorModel.match(selectedModel, in: found) {
+                    selectedModel = match.id
+                } else {
                     // Keep the stored model even if not listed (e.g. parameterized ids).
                     models.insert(CursorModel(id: selectedModel, name: selectedModel), at: 0)
                 }
