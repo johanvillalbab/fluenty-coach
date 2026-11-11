@@ -37,6 +37,7 @@ SOURCES=(
     FluentyCoach/Services/SpeechService.swift
     FluentyCoach/Services/HistoryStore.swift
     FluentyCoach/Services/TranslationStyleStore.swift
+    FluentyCoach/Services/CursorACPClient.swift
     FluentyCoach/Services/AITranslationService.swift
     FluentyCoach/Services/TranslationService.swift
     FluentyCoach/UI/GlassActionButton.swift

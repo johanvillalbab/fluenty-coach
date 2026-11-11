@@ -34,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             history: historyStore,
             ai: aiTranslationService
         )
+        aiTranslationService.applySettings()
         popoverController = PopoverController(
             state: translationState,
             translation: translationService,
@@ -54,6 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             accessibilityService.requestSystemPromptOnce()
             showOnboardingWindow()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        aiTranslationService.shutdown()
     }
 
     // MARK: - Permission monitoring

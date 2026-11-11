@@ -9,6 +9,16 @@ struct AITranslationError: LocalizedError {
 struct CursorModel: Identifiable, Equatable {
     let id: String
     let name: String
+
+    /// ACP ids carry parameters (`composer-2.5[fast=true]`) that a stored model
+    /// from older builds (`composer-2.5`) lacks.
+    var baseID: Substring { id.prefix(while: { $0 != "[" }) }
+
+    static func match(_ stored: String, in models: [CursorModel]) -> CursorModel? {
+        models.first { $0.id == stored }
+            ?? models.first { $0.baseID == stored }
+            ?? models.first { $0.name == stored }
+    }
 }
 
 /// One AI translation result: the text plus what the model detected/used, so the
@@ -19,17 +29,27 @@ struct AITranslation {
     let usedTarget: Language
 }
 
-/// Runs translation through the Cursor CLI in headless mode (same solution as
-/// BestPrompt's PromptImprovementService):
-///   cursor-agent -p <prompt> --output-format text --mode ask --model <model>
-/// The CLI reuses the user's Cursor login (or CURSOR_API_KEY); `--mode ask` keeps
-/// the agent read-only, and `--workspace` points at an empty directory so it never
-/// indexes or touches project files.
 @MainActor
 final class AITranslationService {
+    private struct PreparedSession {
+        let id: String
+        let model: String
+        let client: CursorACPClient
+    }
+
+    private struct Launch: Equatable {
+        let cliPath: String
+        let apiKey: String
+    }
+
     private let style: TranslationStyleStore
-    private var currentProcess: Process?
-    private var jobID = 0
+    private var client: CursorACPClient?
+    private var launch: Launch?
+    private var startup: Task<CursorACPClient, Error>?
+    private var next: (model: String, task: Task<PreparedSession, Error>)?
+    private var models: [CursorModel] = []
+    private var active: (session: PreparedSession, continuation: CheckedContinuation<String, Error>, text: String)?
+    private var cancelCount = 0
 
     static let defaultModel = "composer-2.5"
     static let modelKey = "translationModel"
@@ -69,22 +89,53 @@ final class AITranslationService {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Empty directory handed to --workspace so cursor-agent never scans real projects.
-    private static let workspaceDir: URL = {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("FluentyCoach/workspace", isDirectory: true)
+    private var currentLaunch: Launch { Launch(cliPath: cliPath, apiKey: apiKey) }
+
+    private static let supportDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("FluentyCoach", isDirectory: true)
+
+    private static func supportSubdir(_ name: String) -> URL {
+        let dir = supportDir.appendingPathComponent(name, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
-    }()
+    }
+
+    private static let workspaceDir = supportSubdir("workspace")
+    /// cursor-agent otherwise loads the owner's global ~/.cursor setup (MCP servers,
+    /// skills, hooks that see every prompt) into each translation.
+    private static let configDir = supportSubdir("cursor-config")
+    private static let pidFile = supportDir.appendingPathComponent("cursor-agent.pid")
 
     // MARK: - Translation
 
+    func applySettings() {
+        guard TranslationEngine.current == .ai else { return shutdown() }
+        if let launch, launch != currentLaunch { shutdown() }
+        if let next, next.model == model { return }
+        next?.task.cancel()
+        let wanted = model
+        let task = Task { try await self.prepareSession(for: wanted) }
+        next = (wanted, task)
+        Task {
+            if case .failure = await task.result, next?.task == task {
+                next = nil
+            }
+        }
+    }
+
+    func shutdown() {
+        if let turn = active {
+            resolve(turn.session.id, .failure(AITranslationError(message: "Translation stopped because the AI settings changed.")))
+        }
+        client?.terminate()
+        forgetClient()
+    }
+
     /// Cancels the in-flight run, if any. The pending `translate` call throws a
-    /// CancellationError (a stale-job guard) instead of returning text.
+    /// CancellationError instead of returning text.
     func cancel() {
-        jobID += 1
-        currentProcess?.terminate()
-        currentProcess = nil
+        cancelCount += 1
+        abortActive()
     }
 
     /// Translates in a single model call. When `source` is .auto and the text is
@@ -97,9 +148,6 @@ final class AITranslationService {
         flipTarget: Language,
         context: String?
     ) async throws -> AITranslation {
-        jobID += 1
-        let myJob = jobID
-
         let fullPrompt = buildFullPrompt(
             text: text,
             source: source,
@@ -107,9 +155,15 @@ final class AITranslationService {
             flipTarget: flipTarget,
             context: context
         )
-        let raw = try await runCLI(fullPrompt: fullPrompt)
 
-        guard myJob == jobID else { throw CancellationError() }
+        let cancelCountAtStart = cancelCount
+        let session = try await takePreparedSession()
+        // Preparing the next session while this prompt streams would compete with
+        // it inside the same agent process, so it waits until this turn is over.
+        defer { applySettings() }
+        guard cancelCountAtStart == cancelCount else { throw CancellationError() }
+
+        let raw = try await prompt(fullPrompt, in: session)
 
         let cleaned = Self.sanitize(raw)
         guard !cleaned.isEmpty else {
@@ -191,11 +245,15 @@ final class AITranslationService {
         }
     }
 
+    private static func decodeResponse(_ raw: String) -> AIResponse? {
+        guard let data = sanitize(raw).data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(AIResponse.self, from: data)
+    }
+
     /// Decode the JSON contract; if the model ignored it and answered with plain
     /// text, fall back to using the whole output as the translation.
     static func parse(_ cleaned: String, requestedTarget: Language) -> AITranslation {
-        if let data = cleaned.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode(AIResponse.self, from: data) {
+        if let decoded = decodeResponse(cleaned) {
             let detected = decoded.detectedSource.map { Language(deeplDetected: $0) }
             let used = decoded.targetUsed.map { Language(deeplDetected: $0) } ?? requestedTarget
             return AITranslation(
@@ -207,89 +265,169 @@ final class AITranslationService {
         return AITranslation(text: cleaned, detectedSource: nil, usedTarget: requestedTarget)
     }
 
-    // MARK: - CLI plumbing
+    private func resolve(_ sessionId: String, _ result: Result<String, Error>) {
+        guard let turn = active, turn.session.id == sessionId else { return }
+        active = nil
+        turn.continuation.resume(with: result)
+    }
 
-    private func runCLI(fullPrompt: String) async throws -> String {
+    private func abortActive() {
+        guard let turn = active else { return }
+        cancelTurn(in: turn.session)
+        resolve(turn.session.id, .failure(CancellationError()))
+    }
+
+    private func cancelTurn(in session: PreparedSession) {
+        session.client.notify("session/cancel", ["sessionId": session.id])
+    }
+
+    private func prompt(_ text: String, in session: PreparedSession) async throws -> String {
+        abortActive()
+        return try await withCheckedThrowingContinuation { continuation in
+            active = (session, continuation, "")
+            Task {
+                do {
+                    _ = try await session.client.request("session/prompt", [
+                        "sessionId": session.id,
+                        "prompt": [["type": "text", "text": text]]
+                    ])
+                    if let turn = active, turn.session.id == session.id {
+                        resolve(session.id, .success(turn.text))
+                    }
+                } catch {
+                    cancelTurn(in: session)
+                    resolve(session.id, .failure(error))
+                }
+            }
+        }
+    }
+
+    /// The translation JSON is complete in the stream slightly before the turn
+    /// formally ends, so the turn resolves as soon as the text decodes.
+    private func handleUpdate(_ sessionId: String, _ update: [String: Any]) {
+        guard active?.session.id == sessionId,
+              update["sessionUpdate"] as? String == "agent_message_chunk",
+              let chunk = (update["content"] as? [String: Any])?["text"] as? String else { return }
+        active?.text += chunk
+        guard let text = active?.text, Self.decodeResponse(text) != nil else { return }
+        resolve(sessionId, .success(text))
+    }
+
+    private func takePreparedSession() async throws -> PreparedSession {
+        applySettings()
+        guard let task = next?.task else {
+            throw AITranslationError(message: "The AI engine is turned off in Settings.")
+        }
+        next = nil
+        return try await task.value
+    }
+
+    private func prepareSession(for wanted: String) async throws -> PreparedSession {
+        try Task.checkCancellation()
+        let client = try await ensureClient()
+        let created = try await client.request("session/new", ["cwd": Self.workspaceDir.path, "mcpServers": [Any]()])
+        guard let sessionId = created["sessionId"] as? String else {
+            throw AITranslationError(message: "cursor-agent returned no session.")
+        }
+
+        let modelState = created["models"] as? [String: Any]
+        let listed = (modelState?["availableModels"] as? [[String: Any]] ?? []).compactMap { entry -> CursorModel? in
+            guard let id = entry["modelId"] as? String else { return nil }
+            return CursorModel(id: id, name: entry["name"] as? String ?? id)
+        }
+        models = listed
+
+        // New sessions start in agent mode with full tool access. set_model only
+        // accepts ids the session listed, so the stored model is matched first.
+        async let readOnly = client.request("session/set_mode", ["sessionId": sessionId, "modeId": "ask"])
+        if let match = CursorModel.match(wanted, in: listed), match.id != modelState?["currentModelId"] as? String {
+            _ = try await client.request("session/set_model", ["sessionId": sessionId, "modelId": match.id])
+        }
+        _ = try await readOnly
+
+        return PreparedSession(id: sessionId, model: wanted, client: client)
+    }
+
+    private func ensureClient() async throws -> CursorACPClient {
+        let task: Task<CursorACPClient, Error>
+        if let startup {
+            task = startup
+        } else {
+            launch = currentLaunch
+            task = Task { try await self.startClient() }
+            startup = task
+        }
+        do {
+            return try await task.value
+        } catch {
+            if startup == task {
+                startup = nil
+                launch = nil
+            }
+            throw error
+        }
+    }
+
+    private func startClient() async throws -> CursorACPClient {
+        try Task.checkCancellation()
         let path = cliPath
         guard FileManager.default.isExecutableFile(atPath: path) else {
             throw AITranslationError(message: "cursor-agent not found at \(path). Set the path in Settings.")
         }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = [
-            "-p", fullPrompt,
-            "--output-format", "text",
-            "--mode", "ask",
-            "--model", model,
-            "--workspace", Self.workspaceDir.path,
-            "--trust"
-        ]
-
-        process.environment = processEnvironment()
-        process.currentDirectoryURL = Self.workspaceDir
-
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
-        process.standardInput = FileHandle.nullDevice
-
-        // Accumulate output incrementally so a large response can never fill the
-        // pipe buffer and deadlock the child against readDataToEndOfFile.
-        let stdoutBuffer = PipeBuffer()
-        let stderrBuffer = PipeBuffer()
-        stdoutPipe.fileHandleForReading.readabilityHandler = { handle in
-            stdoutBuffer.append(handle.availableData)
+        CursorACPClient.reapOrphan(pidFile: Self.pidFile)
+        // The agent stores every session on disk (~200-300 KB each) and none is
+        // ever resumed, so the previous agent's sessions are dropped before spawning.
+        try? FileManager.default.removeItem(at: Self.configDir.appendingPathComponent("acp-sessions"))
+        let spawned: CursorACPClient
+        do {
+            spawned = try CursorACPClient(
+                executable: URL(fileURLWithPath: path),
+                environment: processEnvironment(),
+                workingDirectory: Self.workspaceDir,
+                pidFile: Self.pidFile,
+                timeout: Self.timeoutSeconds
+            )
+        } catch {
+            throw AITranslationError(message: "Could not launch cursor-agent: \(error.localizedDescription)")
         }
-        stderrPipe.fileHandleForReading.readabilityHandler = { handle in
-            stderrBuffer.append(handle.availableData)
+        client = spawned
+        spawned.onSessionUpdate = { [weak self] sessionId, update in
+            self?.handleUpdate(sessionId, update)
+        }
+        spawned.onExit = { [weak self, weak spawned] in
+            guard let self, self.client === spawned else { return }
+            forgetClient()
         }
 
-        currentProcess = process
-
-        // Kill runs that hang (network issues, auth prompts…).
-        let timeoutTask = Task.detached {
-            try? await Task.sleep(for: .seconds(Self.timeoutSeconds))
-            if !Task.isCancelled, process.isRunning {
-                process.terminate()
+        do {
+            let initialized = try await spawned.request("initialize", [
+                "protocolVersion": 1,
+                "clientCapabilities": [
+                    "fs": ["readTextFile": false, "writeTextFile": false],
+                    "terminal": false
+                ]
+            ])
+            let methods = initialized["authMethods"] as? [[String: Any]]
+            if let methodId = methods?.first?["id"] as? String {
+                _ = try await spawned.request("authenticate", ["methodId": methodId])
             }
+        } catch {
+            spawned.terminate()
+            if client === spawned { client = nil }
+            throw error
         }
+        return spawned
+    }
 
-        let status: Int32 = try await withCheckedThrowingContinuation { continuation in
-            process.terminationHandler = { p in
-                continuation.resume(returning: p.terminationStatus)
-            }
-            do {
-                try process.run()
-            } catch {
-                process.terminationHandler = nil
-                continuation.resume(throwing: AITranslationError(message: "Could not launch cursor-agent: \(error.localizedDescription)"))
-            }
-        }
-
-        timeoutTask.cancel()
-        stdoutPipe.fileHandleForReading.readabilityHandler = nil
-        stderrPipe.fileHandleForReading.readabilityHandler = nil
-        // Drain anything still buffered in the pipes after termination.
-        stdoutBuffer.append(stdoutPipe.fileHandleForReading.readDataToEndOfFile())
-        stderrBuffer.append(stderrPipe.fileHandleForReading.readDataToEndOfFile())
-
-        if currentProcess === process { currentProcess = nil }
-
-        let stdout = stdoutBuffer.string()
-        let stderr = stderrBuffer.string()
-
-        guard status == 0 else {
-            if status == SIGTERM || status == -SIGTERM {
-                throw AITranslationError(message: "Cancelled or timed out.")
-            }
-            let detail = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            let firstLine = detail.components(separatedBy: "\n").first ?? ""
-            throw AITranslationError(message: firstLine.isEmpty ? "cursor-agent failed (code \(status))." : firstLine)
-        }
-
-        return stdout
+    private func forgetClient() {
+        startup?.cancel()
+        next?.task.cancel()
+        client = nil
+        launch = nil
+        startup = nil
+        next = nil
+        models = []
     }
 
     /// GUI apps launch with a minimal environment; cursor-agent (a bash
@@ -301,6 +439,7 @@ final class AITranslationService {
         let home = NSHomeDirectory()
         let extraPaths = ["\(home)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"]
         env["PATH"] = (extraPaths + [env["PATH"] ?? "/usr/bin:/bin"]).joined(separator: ":")
+        env["CURSOR_CONFIG_DIR"] = Self.configDir.path
         let key = apiKey
         if !key.isEmpty {
             env["CURSOR_API_KEY"] = key
@@ -308,68 +447,9 @@ final class AITranslationService {
         return env
     }
 
-    // MARK: - Models
-
-    /// Parses `cursor-agent --list-models` ("id - Display Name" lines) for Settings.
     func listModels() async -> [CursorModel] {
-        let path = cliPath
-        guard FileManager.default.isExecutableFile(atPath: path) else { return [] }
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = ["--list-models"]
-        process.environment = processEnvironment()
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-        process.standardInput = FileHandle.nullDevice
-
-        let buffer = PipeBuffer()
-        pipe.fileHandleForReading.readabilityHandler = { buffer.append($0.availableData) }
-
-        let launched: Bool = await withCheckedContinuation { continuation in
-            process.terminationHandler = { _ in continuation.resume(returning: true) }
-            do {
-                try process.run()
-            } catch {
-                process.terminationHandler = nil
-                continuation.resume(returning: false)
-            }
-        }
-        pipe.fileHandleForReading.readabilityHandler = nil
-        buffer.append(pipe.fileHandleForReading.readDataToEndOfFile())
-        guard launched else { return [] }
-
-        return buffer.string()
-            .components(separatedBy: "\n")
-            .compactMap { line in
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard let sepRange = trimmed.range(of: " - ") else { return nil }
-                let id = String(trimmed[..<sepRange.lowerBound]).trimmingCharacters(in: .whitespaces)
-                let name = String(trimmed[sepRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-                guard !id.isEmpty, !name.isEmpty, !id.contains(" ") else { return nil }
-                return CursorModel(id: id, name: name)
-            }
-    }
-}
-
-/// Thread-safe accumulator for pipe readability handlers (they fire on a
-/// background queue while we await on the main actor).
-private final class PipeBuffer: @unchecked Sendable {
-    private var data = Data()
-    private let lock = NSLock()
-
-    func append(_ chunk: Data) {
-        guard !chunk.isEmpty else { return }
-        lock.lock()
-        data.append(chunk)
-        lock.unlock()
-    }
-
-    func string() -> String {
-        lock.lock()
-        defer { lock.unlock() }
-        return String(data: data, encoding: .utf8) ?? ""
+        applySettings()
+        _ = try? await next?.task.value
+        return models
     }
 }

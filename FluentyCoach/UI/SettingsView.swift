@@ -33,6 +33,8 @@ struct SettingsView: View {
                 .labelsHidden()
                 .onChange(of: engine) { _, newValue in
                     TranslationEngine.current = newValue
+                    ai.applySettings()
+                    if newValue == .ai && models.isEmpty { loadModels() }
                 }
                 Text(engine == .ai
                      ? "Translations run through cursor-agent in headless mode, using your Cursor API key or login."
@@ -83,7 +85,7 @@ struct SettingsView: View {
             cliPath = ai.cliPath
             cliAvailable = ai.isCLIAvailable
             styleText = style.text
-            loadModels()
+            if engine == .ai { loadModels() }
         }
     }
 
@@ -135,6 +137,7 @@ struct SettingsView: View {
                 }
                 .onChange(of: selectedModel) { _, newValue in
                     UserDefaults.standard.set(newValue, forKey: AITranslationService.modelKey)
+                    ai.applySettings()
                 }
                 if isLoadingModels {
                     ProgressView().controlSize(.small)
@@ -144,7 +147,7 @@ struct SettingsView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
-                    .help("Reload models from cursor-agent --list-models")
+                    .help("Reload models from cursor-agent")
                 }
             }
             Text("composer-2.5 is the fastest — ideal for the popover. Thinking models translate slightly better but take longer.")
@@ -261,7 +264,9 @@ struct SettingsView: View {
             let found = await ai.listModels()
             if !found.isEmpty {
                 models = found
-                if !found.contains(where: { $0.id == selectedModel }) {
+                if let match = CursorModel.match(selectedModel, in: found) {
+                    selectedModel = match.id
+                } else {
                     // Keep the stored model even if not listed (e.g. parameterized ids).
                     models.insert(CursorModel(id: selectedModel, name: selectedModel), at: 0)
                 }
