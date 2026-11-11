@@ -34,6 +34,7 @@ final class AITranslationService {
     static let defaultModel = "composer-2.5"
     static let modelKey = "translationModel"
     static let cliPathKey = "cursorAgentPath"
+    static let apiKeyKey = "cursorApiKey"
     static let timeoutSeconds: TimeInterval = 60
 
     init(style: TranslationStyleStore) {
@@ -58,6 +59,14 @@ final class AITranslationService {
 
     var isCLIAvailable: Bool {
         FileManager.default.isExecutableFile(atPath: cliPath)
+    }
+
+    /// Optional Cursor API key (`crsr_…`). When set, it is passed as
+    /// `CURSOR_API_KEY` so GUI launches (which don't inherit the shell env)
+    /// can authenticate without an interactive `cursor-agent login`.
+    var apiKey: String {
+        (UserDefaults.standard.string(forKey: Self.apiKeyKey) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Empty directory handed to --workspace so cursor-agent never scans real projects.
@@ -217,13 +226,7 @@ final class AITranslationService {
             "--trust"
         ]
 
-        // GUI apps launch with a minimal environment; cursor-agent (a bash script
-        // that locates its versioned binary) needs HOME and a sane PATH.
-        var env = ProcessInfo.processInfo.environment
-        let home = NSHomeDirectory()
-        let extraPaths = ["\(home)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"]
-        env["PATH"] = (extraPaths + [env["PATH"] ?? "/usr/bin:/bin"]).joined(separator: ":")
-        process.environment = env
+        process.environment = processEnvironment()
         process.currentDirectoryURL = Self.workspaceDir
 
         let stdoutPipe = Pipe()
@@ -289,6 +292,22 @@ final class AITranslationService {
         return stdout
     }
 
+    /// GUI apps launch with a minimal environment; cursor-agent (a bash
+    /// script that locates its versioned binary) needs HOME and a sane PATH.
+    /// `CURSOR_API_KEY` is injected from Settings so Finder/menu-bar launches
+    /// don't depend on a shell profile.
+    private func processEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let home = NSHomeDirectory()
+        let extraPaths = ["\(home)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"]
+        env["PATH"] = (extraPaths + [env["PATH"] ?? "/usr/bin:/bin"]).joined(separator: ":")
+        let key = apiKey
+        if !key.isEmpty {
+            env["CURSOR_API_KEY"] = key
+        }
+        return env
+    }
+
     // MARK: - Models
 
     /// Parses `cursor-agent --list-models` ("id - Display Name" lines) for Settings.
@@ -299,9 +318,7 @@ final class AITranslationService {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = ["--list-models"]
-        var env = ProcessInfo.processInfo.environment
-        env["PATH"] = "\(NSHomeDirectory())/.local/bin:/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "/usr/bin:/bin")
-        process.environment = env
+        process.environment = processEnvironment()
 
         let pipe = Pipe()
         process.standardOutput = pipe

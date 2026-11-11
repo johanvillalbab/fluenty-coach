@@ -99,6 +99,11 @@ final class PopoverController {
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         p.hidesOnDeactivate = false
         p.ignoresMouseEvents = false
+        // The panel has no title bar, so treat its full glass surface as the
+        // draggable window background. AppKit still gives buttons and fields
+        // their normal click handling, while a click-and-drag moves the panel.
+        p.isMovable = true
+        p.isMovableByWindowBackground = true
 
         hostingView = hv
         panel = p

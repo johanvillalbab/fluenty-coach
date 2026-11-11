@@ -9,7 +9,9 @@ struct SettingsView: View {
 
     @State private var engine = TranslationEngine.current
     @State private var apiKey: String = UserDefaults.standard.string(forKey: "deeplApiKey") ?? ""
+    @State private var cursorApiKey: String = UserDefaults.standard.string(forKey: AITranslationService.apiKeyKey) ?? ""
     @State private var saved = false
+    @State private var cursorKeySaved = false
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     @State private var models: [CursorModel] = []
@@ -33,7 +35,7 @@ struct SettingsView: View {
                     TranslationEngine.current = newValue
                 }
                 Text(engine == .ai
-                     ? "Translations run through your Cursor account via cursor-agent in headless mode — no API key needed."
+                     ? "Translations run through cursor-agent in headless mode, using your Cursor API key or login."
                      : "Translations use the DeepL REST API with your API key.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -74,7 +76,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 480, height: 640)
+        .frame(width: 480, height: 720)
         .onAppear {
             permission.refresh()
             selectedModel = ai.model
@@ -98,6 +100,27 @@ struct SettingsView: View {
                     .font(.system(size: 12, design: .monospaced))
                     .onSubmit { saveCLIPath() }
                 Button("Save") { saveCLIPath() }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                SecureField("Cursor API key (crsr_…)", text: $cursorApiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 12, design: .monospaced))
+                    .onSubmit { saveCursorAPIKey() }
+                HStack {
+                    Text("Used as CURSOR_API_KEY when launching cursor-agent. Leave empty to reuse your Cursor login.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if cursorKeySaved {
+                        Label("Saved!", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.system(size: 12))
+                            .transition(.opacity)
+                    }
+                    Button("Save") { saveCursorAPIKey() }
+                        .disabled(cursorApiKey.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
 
             HStack(spacing: 8) {
@@ -200,6 +223,20 @@ struct SettingsView: View {
     }
 
     // MARK: - Actions
+
+    private func saveCursorAPIKey() {
+        let trimmed = cursorApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            UserDefaults.standard.removeObject(forKey: AITranslationService.apiKeyKey)
+        } else {
+            UserDefaults.standard.set(trimmed, forKey: AITranslationService.apiKeyKey)
+        }
+        withAnimation { cursorKeySaved = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { cursorKeySaved = false }
+        }
+        loadModels()
+    }
 
     private func saveCLIPath() {
         let trimmed = cliPath.trimmingCharacters(in: .whitespaces)

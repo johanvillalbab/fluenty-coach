@@ -142,9 +142,9 @@ cat > "$APP_PATH/Contents/Info.plist" << 'PLISTEOF'
     <key>CFBundleDisplayName</key>
     <string>Fluenty Coach</string>
     <key>CFBundleVersion</key>
-    <string>1.1</string>
+    <string>1.2</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1</string>
+    <string>1.2</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>

@@ -139,7 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showWindow(
             &settingsWindow,
             title: "Fluenty Coach — Settings",
-            size: NSSize(width: 480, height: 640),
+            size: NSSize(width: 480, height: 720),
             rootView: SettingsView(
                 permission: permissionState,
                 accessibility: accessibilityService,
